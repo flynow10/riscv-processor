@@ -50,7 +50,7 @@ module riscv_processor(
 						WAIT_MEM_ACCESS = 4'b110,
 						UPDATE = 4'b111,
 						WAIT_UPDATE = 4'b1000,
-            CLEANUP_UPDATE = 4'1001
+            CLEANUP_UPDATE = 4'1001,
 						DONE = 4'b1010, // Debug for halt function
 						DECODE_ERROR = 4'b1110,
 						MEM_ERROR = 4'b1101,
