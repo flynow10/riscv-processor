@@ -41,34 +41,26 @@ module riscv_processor(
 	assign rst = SW[9];
 
 	// FSM Control
-	parameter START = 5'b0,
-						FETCH = 5'b1,
-						WAIT_FETCH = 5'b10,
-						DECODE = 5'b11,
-						EXECUTE = 5'b100,
-						MEM_ACCESS = 5'b101,
-						WAIT_MEM_ACCESS = 5'b110,
-						UPDATE = 5'b111,
-						WAIT_UPDATE = 5'b1000,
-						DONE = 5'b1001, // Debug for halt function
-						GET_REG = 5'b1011,
-						WAIT_REG = 5'b1100,
-						DISP_REG = 5'b1101,
-						DISP_BYTE = 5'b1110,
-						WAIT_BYTE = 5'b1111,
-						PRINT_DONE = 5'b10000,
-						INCREMENT_DISPLAY = 5'b10001,
-						INCREMENT_BYTE = 5'b10010,
-						CLEANUP_UPDATE = 5'b10011,
-						DECODE_ERROR = 5'b11110,
-						MEM_ERROR = 5'b11101,
-						FSM_ERROR = 5'b11111;
+	parameter START = 4'b0,
+						FETCH = 4'b1,
+						WAIT_FETCH = 4'b10,
+						DECODE = 4'b11,
+						EXECUTE = 4'b100,
+						MEM_ACCESS = 4'b101,
+						WAIT_MEM_ACCESS = 4'b110,
+						UPDATE = 4'b111,
+						WAIT_UPDATE = 4'b1000,
+            CLEANUP_UPDATE = 4'1001
+						DONE = 4'b1010, // Debug for halt function
+						DECODE_ERROR = 4'b1110,
+						MEM_ERROR = 4'b1101,
+						FSM_ERROR = 4'b1111;
 
-	reg [4:0] S;
-	reg [4:0] NS;
+	reg [3:0] S;
+	reg [3:0] NS;
 
-	assign LEDR[4:0] = S;
-	assign LEDR[9:5] = SW[9:5];
+	assign LEDR[3:0] = S;
+	assign LEDR[9:4] = SW[9:4];
 
 	// Display
 	reg [31:0] to_display;
@@ -139,14 +131,6 @@ module riscv_processor(
 			else*/
 				NS = FETCH;
 			FETCH: NS = WAIT_FETCH;
-			GET_REG: NS = WAIT_REG;
-			WAIT_REG: NS = DISP_REG;
-			DISP_REG: NS = (disp_count == 6'd32)?(PRINT_DONE):(DISP_BYTE);
-			DISP_BYTE: NS = INCREMENT_BYTE;
-			INCREMENT_BYTE: NS = (byte_count == 4'd7)?(INCREMENT_DISPLAY):(WAIT_BYTE);
-			WAIT_BYTE: NS = DISP_BYTE;
-			INCREMENT_DISPLAY: NS = GET_REG;
-			PRINT_DONE: NS = WAIT_FETCH;
 			WAIT_FETCH: NS = DECODE;
 			DECODE: NS = EXECUTE;
 			EXECUTE: begin
@@ -202,31 +186,6 @@ module riscv_processor(
 				FETCH: begin
 					need_write_mem <= 1'b0;
 					memory_address <= program_counter;
-				end
-				GET_REG: 
-				begin
-					debug_address <= disp_count;
-					vga_write_en <= 1'b1;
-				end
-				DISP_REG: 
-				begin
-					byte_count <= 3'b0;
-				end
-				DISP_BYTE: 
-				begin
-					vga_write_address <= (disp_count * 13'd80) + byte_count;
-					current_byte <= (debug_reg_out >> ((4'd7 - byte_count) * 8'd4)) & 4'b1111;
-				end
-				INCREMENT_BYTE: begin
-					vga_input_data <= {encoded_byte, 24'b111111111111111111111111};
-				end
-				WAIT_BYTE: byte_count <= byte_count + 3'b1; 
-				INCREMENT_DISPLAY: disp_count <= disp_count + 5'b1;
-				PRINT_DONE: 
-				begin
-					vga_write_en <= 1'b0;
-					disp_count <= 6'b0;
-					byte_count <= 3'b0;
 				end
 				DECODE: begin
 					instruction <= memory_word_output;
